@@ -1,0 +1,3 @@
+#!/bin/bash
+cd /var/java
+java -cp servlet-api.jar -jar winstone-1.0.5-boot.jar --warfile helloworld.war
