@@ -3,34 +3,29 @@
 
 VAGRANTFILE_API_VERSION = "2"
 
-setup=<<EOF
-sudo sed -i "s/^DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/" /etc/default/ufw
-sudo ufw reload
-sudo ufw allow 4243/tcp
-EOF
-
-
-
 BOX_NAME="raring"
-BOX_URL="http://cloud-images.ubuntu.com/vagrant/%s/current/%s-ops-cloudimg-amd64-vagrant-disk1.box" % [BOX_NAME, BOX_NAME]
+BOX_HOST = "cloud-images.ubuntu.com"
+BOX_DIR = "vagrant/%s/current" % [BOX_NAME]
+BOX_FILE = "%s-ops-cloudimg-amd64-vagrant-disk1.box" % [BOX_NAME]
+BOX_URL = "http://%s/%s/%s" % [BOX_HOST, BOX_DIR, BOX_FILE]
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box_url = BOX_URL
-  config.vm.define "web", :default => true do |web|
-    web.vm.box = BOX_NAME
-    web.vm.network :private_network, ip: "172.16.0.12"
-    web.vm.provision :fabric do |fabric|
-      fabric.fabfile_path = "provisioning/setup.py"
-      fabric.tasks = ["web"]
+  config.vm.define "registry", :default => true do |registry|
+    registry.vm.box = BOX_NAME
+    registry.vm.network :private_network, ip: "172.16.0.12"
+    registry.vm.provision :shell do |shell|
+      shell.path = "provisioning/shell/setup.sh"
+      shell.args = %q(_registry)
     end
-    web.vm.synced_folder "files", "/files"
+    registry.vm.synced_folder "files", "/files"
   end
   config.vm.define "dev" do |dev|
     dev.vm.box = BOX_NAME
     dev.vm.network :private_network, ip: "172.16.0.13"
-    dev.vm.provision :fabric do |fabric|
-      fabric.fabfile_path = "provisioning/setup.py"
-      fabric.tasks = ["dev"]
+    dev.vm.provision :shell do |shell|
+      shell.path = "provisioning/shell/setup.sh"
+      shell.args = %q(_dev)
     end
     dev.vm.synced_folder "files", "/files"
     dev.vm.synced_folder "~/Dropbox/Public/docker", "/app"
@@ -42,9 +37,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       virtualbox.customize ["modifyvm", :id, "--cpus", "2"]
       virtualbox.customize ["modifyvm", :id, "--memory", "4096"]
     end
-    ops.vm.provision :fabric do |fabric|
-      fabric.fabfile_path = "provisioning/setup.py"
-      fabric.tasks = ["ops"]
+    ops.vm.provision :shell do |shell|
+      shell.path = "provisioning/shell/setup.sh"
+      shell.args = %q(_ops)
     end
     ops.vm.synced_folder "files", "/files"
   end
